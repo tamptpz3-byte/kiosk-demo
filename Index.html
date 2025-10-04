@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Kiosk</title>
+<style>
+body {
+  box-sizing: border-box;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,"TH Sarabun New",sans-serif;background:#0b1224;color:#e5e7eb}
+header{padding:12px;text-align:center;
+  background:linear-gradient(90deg,#22c55e,#3b82f6,#a855f7);
+  font-weight:800;border-bottom:1px solid #1f2937}
+.container{display:flex;gap:12px;padding:12px}
+@media(max-width:980px){.container{flex-direction:column}}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px}
+.card{background:#0a0f1f;border:1px solid #1f2937;
+  border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:8px;min-height:280px}
+.emoji{font-size:44px;text-align:center}
+h3{margin:0;font-size:15px}
+.tag{font-size:11px;background:#10b98122;border:1px solid #10b98144;border-radius:999px;padding:1px 8px}
+.meta{font-size:12px;color:#9aa5b1}
+.price{color:#22c55e;font-weight:800}
+.btn,select{border:1px solid #1f2937;border-radius:10px;background:#0b1224;color:#e5e7eb;padding:7px 10px}
+.btn{cursor:pointer;transition:background 0.3s, transform 0.2s}
+.btn:active{transform:scale(0.96)}
+.add{background:linear-gradient(180deg,#3b82f6,#2563eb);border:0;font-weight:800;color:#fff}
+.btn.active {background:#16a34a !important; color:#fff !important;}
+.cart{background:#0a0f1f;border:1px solid #1f2937;border-radius:12px;padding:16px;height:fit-content;position:sticky;top:12px}
+.cart-item{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #1f2937}
+.cart-item:last-child{border-bottom:none}
+.quantity{display:flex;align-items:center;gap:8px}
+.qty-btn{width:24px;height:24px;border-radius:4px;border:1px solid #1f2937;background:#0b1224;color:#e5e7eb;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px}
+.total{font-size:18px;font-weight:800;color:#22c55e;text-align:center;margin:16px 0}
+.checkout{width:100%;background:linear-gradient(180deg,#22c55e,#16a34a);border:0;color:#fff;font-weight:800;padding:12px;border-radius:10px;cursor:pointer;font-size:16px}
+.empty-cart{text-align:center;color:#9aa5b1;font-size:14px}
+main{flex:2}
+aside{flex:1;background:#0a0f1f;border:1px solid:#1f2937;border-radius:12px;padding:16px;height:fit-content;position:sticky;top:12px}
+.small{font-size:11px;color:#9aa5b1}
+.big{font-size:16px;font-weight:800;color:#22c55e}
+#qr{text-align:center;margin:16px 0;display:none}
+#qr.show{display:block}
+hr{border:none;border-top:1px solid #1f2937;margin:12px 0}
+.controls{display:flex;flex-direction:column;gap:8px;margin:8px 0}
+.mode{display:flex;gap:4px}
+.mode button{flex:1;padding:4px 8px;font-size:12px}
+.mode .on{background:#22c55e;color:#fff}
+.qty{display:flex;align-items:center;gap:8px;justify-content:center}
+.qty button{width:28px;height:28px;padding:0;display:flex;align-items:center;justify-content:center}
+.qty span{min-width:20px;text-align:center}
+.row{display:flex;gap:8px;margin:8px 0;align-items:center}
+.row button{flex:1}
+#pay{display:flex;gap:12px;margin-left:8px}
+#pay label{display:flex;align-items:center;gap:4px;cursor:pointer}
+#pay input{margin:0}
+#qr{text-align:center;margin:16px 0;display:none}
+#qr.show{display:block}
+#qrimg{border-radius:8px;margin:8px 0}
+.sum{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:16px 0}
+.box{background:#1f2937;border-radius:8px;padding:8px;text-align:center}
+</style>
+</head>
+<body>
+<header>🧃 Kiosk — ซื้อ/เช่า · QR/บัตร/วอลเล็ท/เงินสด</header>
+
+<template id="tpl"><div class="card">
+  <div class="emoji" data-emo>🛍️</div>
+  <div style="display:flex;justify-content:space-between;align-items:center">
+    <h3 data-name>สินค้า</h3><span class="tag" data-cap>ซื้อเท่านั้น</span>
+  </div>
+  <div class="price" data-buy>ซื้อ ฿0.00</div>
+  <div class="meta" data-rent></div>
+  <div class="controls">
+    <div class="mode">
+      <button data-b class="on btn">ซื้อ</button><button data-r class="btn">เช่า</button>
+    </div>
+    <div style="display:flex;gap:6px;align-items:center">
+      <span class="small">ชม.</span>
+      <select data-hrs>
+        <option>1</option><option>2</option><option>3</option>
+        <option>6</option><option>12</option>
+      </select>
+    </div>
+    <div class="qty">
+      <button class="btn" data-dec>-</button>
+      <span data-q>1</span>
+      <button class="btn" data-inc>+</button>
+    </div>
+  </div>
+  <button class="add btn" data-add style="margin-top:auto">เพิ่มลงตะกร้า</button>
+</div></template>
+
+<div class="container">
+  <main>
+    <h3>🧷 เลือกสินค้า</h3>
+    <div id="grid" class="grid"></div>
+  </main>
+  <aside>
+    <h3>🛒 ตะกร้า</h3>
+    <div id="cart" class="small">ยังไม่มีสินค้า</div><hr>
+    <div class="row small">วิธีชำระเงิน:
+      <span id="pay">
+        <label><input type="radio" name="pay" value="qr" checked>QR</label>
+        <label><input type="radio" name="pay" value="card">บัตร</label>
+        <label><input type="radio" name="pay" value="wallet">วอลเล็ท</label>
+        <label><input type="radio" name="pay" value="cash">เงินสด</label>
+      </span>
+    </div>
+    <div class="row">
+      <button id="checkout" class="btn add">Checkout</button>
+      <button id="clear" class="btn">ล้างตะกร้า</button>
+    </div>
+    <div id="qr">
+      <div class="small">สแกนเพื่อชำระเงิน</div>
+      <img id="qrimg" src="" alt="QR" width="250">
+      <div class="small">OTP: <b id="otp"></b></div>
+    </div>
+    <div class="sum">
+      <div class="box"><div class="small">ยอดตะกร้า</div><div id="sTotal" class="big">0.00</div></div>
+      <div class="box"><div class="small">ค่าซื้อ</div><div id="sBuy" class="big">0.00</div></div>
+      <div class="box"><div class="small">ค่าเช่า</div><div id="sRent" class="big">0.00</div></div>
+      <div class="box"><div class="small">มัดจำ</div><div id="sDep" class="big">0.00</div></div>
+      <div class="box"><div class="small">ค่าปรับ</div><div id="sFine" class="big">0.00</div></div>
+    </div>
+  </aside>
+</div>
+
+<script>
+const $=q=>document.querySelector(q),fmt=n=>(+n).toFixed(2),THB=n=>"฿"+fmt(n),TP=$("#tpl").content;
+let cart=[];
+
+function flashGreen(btn){
+  btn.classList.add("active");
+  setTimeout(()=>btn.classList.remove("active"),1000);
+}
+
+const PRODUCTS = [
+  // สินค้าที่ซื้อและเช่าได้
+  {id:"UMBR",n:"ร่มพับ",e:"☂️",buy:149,rh:10,dep:100,fine:15},
+  {id:"RAIN",n:"เสื้อกันฝน",e:"🧥",buy:129,rh:12,dep:100,fine:18},
+  {id:"PWBK",n:"Power Bank 10k",e:"🔋",buy:399,rh:15,dep:200,fine:22.5},
+  {id:"WALL",n:"หัวชาร์จ USB-C",e:"🔌",buy:199,rh:8,dep:60,fine:12},
+  {id:"EARW",n:"หูฟังมีสาย",e:"🎧",buy:129,rh:9,dep:80,fine:13.5},
+  {id:"FANP",n:"พัดลมพกพา",e:"🪭",buy:299,rh:12,dep:120,fine:18},
+  {id:"PWRB",n:"ปลั๊กพ่วงเล็ก 3 ช่อง",e:"🔌",buy:129,rh:8,dep:100,fine:15},
+  
+  // สินค้าที่ซื้อได้อย่างเดียว
+  {id:"FBAG",n:"ถุงผ้าพับได้",e:"👜",buy:39},
+  {id:"CABL",n:"สายชาร์จ 3in1",e:"🔌",buy:159},
+  {id:"STDY",n:"อุปกรณ์การเรียน (ชุด)",e:"📚",buy:89},
+  {id:"SLIP",n:"รองเท้าแตะ",e:"👡",buy:79},
+  {id:"MEDS",n:"ยาสามัญชุดเล็ก",e:"🧰",buy:99},
+  {id:"SUNS",n:"ครีมกันแดด SPF50",e:"🌞",buy:69},
+  {id:"TOOT",n:"แปรงสีฟัน+ยาสีฟัน",e:"🪥",buy:39},
+  {id:"PAD",n:"ผ้าอนามัย (แพ็คเล็ก)",e:"🩸",buy:35},
+  {id:"UMAS",n:"หน้ากากอนามัย (10 ชิ้น)",e:"😷",buy:35},
+  {id:"PLAS",n:"พลาสเตอร์แผล",e:"🩹",buy:29},
+  {id:"HAND",n:"เจลล้างมือพกพา",e:"🧴",buy:29},
+  {id:"PAIN",n:"ยาแก้ปวด (พาราเซตามอล)",e:"💊",buy:25},
+  {id:"WIPES",n:"ทิชชู่เปียก",e:"🧼",buy:25},
+  {id:"TISS",n:"ทิชชู่แห้ง",e:"🧻",buy:20},
+  {id:"ZIPB",n:"ถุงซิป 12x17cm (10 ใบ)",e:"🛍️",buy:19}
+];
+
+function renderProducts(){
+  const g=$("#grid");g.innerHTML="";
+  PRODUCTS.forEach(p=>{
+    const c=TP.cloneNode(true);
+    const emo=c.querySelector("[data-emo]"),nm=c.querySelector("[data-name]"),cap=c.querySelector("[data-cap]"),
+          buy=c.querySelector("[data-buy]"),rent=c.querySelector("[data-rent]"),
+          b=c.querySelector("[data-b]"),r=c.querySelector("[data-r]"),
+          hrs=c.querySelector("[data-hrs]"),q=c.querySelector("[data-q]");
+    emo.textContent=p.e; nm.textContent=p.n; buy.textContent="ซื้อ "+THB(p.buy);
+    cap.textContent=p.rh?"ซื้อ/เช่า":"ซื้อเท่านั้น";
+    rent.textContent=p.rh?`เช่า ${THB(p.rh)}/ชม. • มัดจำ ${THB(p.dep)} • ปรับ ${THB(p.fine)}/ชม.`:"";
+    if(!p.rh){hrs.disabled=true;r.disabled=true;}
+    let qty=1,mode="buy";
+    c.querySelector("[data-inc]").onclick=()=>{qty++;q.textContent=qty};
+    c.querySelector("[data-dec]").onclick=()=>{qty=Math.max(1,qty-1);q.textContent=qty};
+    b.onclick=()=>{mode="buy";b.classList.add("on");r.classList.remove("on")};
+    r.onclick=()=>{if(!p.rh)return;mode="rent";r.classList.add("on");b.classList.remove("on")};
+    const addBtn=c.querySelector("[data-add]");
+    addBtn.onclick=()=>{
+      flashGreen(addBtn);
+      const h=mode==="rent"&&p.rh?+hrs.value:0;
+      const price=mode==="rent"?p.rh*h*qty:p.buy*qty;
+      const dep=mode==="rent"?p.dep*qty:0;
+      cart.push({n:p.n,qty,hrs:h,mode,price,dep,fine:p.fine||0});
+      renderCart();
+    };
+    g.appendChild(c);
+  });
+}
+
+function line(it,i){
+  return it.mode==="buy"
+   ? `<div style="margin-bottom:8px;padding:8px;border-bottom:1px solid #1f2937;display:flex;justify-content:space-between;align-items:center">
+       <div><div>${it.n} (ซื้อ)</div><div class="small">จำนวน: ${it.qty} • ${THB(it.price)}</div></div>
+       <button onclick="del(${i})" class="btn">ลบ</button></div>`
+   : `<div style="margin-bottom:8px;padding:8px;border-bottom:1px solid #1f2937;display:flex;justify-content:space-between;align-items:center">
+       <div><div>${it.n} (เช่า)</div><div class="small">${it.qty} • ${it.hrs}ชม. • ${THB(it.price)}</div></div>
+       <button onclick="ret(${i})" class="btn">คืน</button></div>`;
+}
+
+function renderCart(){
+  const cartEl=$("#cart");
+  if(!cart.length){cartEl.innerHTML="ยังไม่มีสินค้า";updateTotals();return}
+  cartEl.innerHTML=cart.map(line).join("");
+  updateTotals();
+}
+
+function updateTotals(){
+  const buy=cart.filter(i=>i.mode==="buy").reduce((s,i)=>s+i.price,0);
+  const rent=cart.filter(i=>i.mode==="rent").reduce((s,i)=>s+i.price,0);
+  const dep=cart.reduce((s,i)=>s+i.dep,0);
+  const fine=0;
+  const total=buy+rent+dep+fine;
+  $("#sBuy").textContent=fmt(buy);
+  $("#sRent").textContent=fmt(rent);
+  $("#sDep").textContent=fmt(dep);
+  $("#sFine").textContent=fmt(fine);
+  $("#sTotal").textContent=fmt(total);
+}
+
+window.del=i=>{cart.splice(i,1);renderCart()};
+window.ret=i=>{cart.splice(i,1);renderCart()};
+
+function flashButton(id){
+  const btn=$(id);flashGreen(btn);
+}
+
+$("#clear").onclick=()=>{flashButton("#clear");cart=[];renderCart()};
+
+const PP_ID="0886764297"; // เบอร์ PromptPay ของคุณ
+
+function setQRByPay(total){
+  const pay=document.querySelector('input[name="pay"]:checked').value;
+  if(pay==="wallet"){
+    $("#qrimg").src="https://i.ibb.co/V0nF5SZr/IMG-7380.jpg";
+  } else {
+    $("#qrimg").src=`https://promptpay.io/${PP_ID}/${total.toFixed(2)}`;
+  }
+  $("#qr").style.display="block";
+  $("#otp").textContent=Math.floor(100000 + Math.random()*900000);
+}
+
+$("#checkout").onclick=()=>{
+  if(!cart.length) return alert("ยังไม่มีสินค้า");
+  flashButton("#checkout");
+  const total = cart.reduce((s,it)=>it.mode==="buy"?s+it.price:s+it.price+it.dep,0);
+  const pay=document.querySelector('input[name="pay"]:checked').value;
+  if(pay==="qr" || pay==="wallet"){
+    setQRByPay(total);
+  } else {
+    $("#qr").style.display="none";
+    alert("วิธีชำระ: "+(pay==="cash"?"เงินสด":"บัตร"));
+  }
+};
+
+document.getElementById("pay").addEventListener("change",()=>{
+  if(!cart.length) return $("#qr").style.display="none";
+  const total = cart.reduce((s,it)=>it.mode==="buy"?s+it.price:s+it.price+it.dep,0);
+  const v=document.querySelector('input[name="pay"]:checked').value;
+  if(v==="qr"||v==="wallet"){ setQRByPay(total); }
+  else { $("#qr").style.display="none"; }
+});
+
+renderProducts();renderCart();
+</script>
+
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'989770d567d487da',t:'MTc1OTYwOTg2NC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
